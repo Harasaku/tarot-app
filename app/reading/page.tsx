@@ -114,7 +114,6 @@ function FanCard({
         height: `${CARD_H}px`,
         transformOrigin: "50% 100%",
         transform: `rotate(${angle}deg)${hovered ? " translateY(-36px) scale(1.06)" : ""}`,
-        transition: "transform 0.22s ease",
         zIndex: hovered ? 50 : index,
         cursor: isPicked ? "default" : "pointer",
         opacity: isPicked ? 0.15 : 1,
