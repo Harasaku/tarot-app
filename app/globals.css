@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0414;
+  --foreground: #e8d5b7;
+  --gold: #c9a84c;
+  --purple: #6b21a8;
 }
 
 @theme inline {
@@ -12,15 +14,159 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  min-height: 100vh;
+}
+
+/* Stars background */
+.stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle linear infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* Card flip */
+.card-container {
+  perspective: 1000px;
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card-back {
+  background: linear-gradient(135deg, #1a0533 0%, #2d1b69 50%, #1a0533 100%);
+  border: 2px solid #c9a84c;
+}
+
+.card-front {
+  transform: rotateY(180deg);
+}
+
+/* Glow effect */
+.gold-glow {
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.4), 0 0 40px rgba(201, 168, 76, 0.2);
+}
+
+.purple-glow {
+  box-shadow: 0 0 30px rgba(107, 33, 168, 0.5);
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #c9a84c, #fff8e1, #c9a84c, #fff8e1, #c9a84c);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+/* Float animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 0 25px rgba(201, 168, 76, 0.5);
+}
+
+/* Divider */
+.divider {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+}
+
+/* Shuffle animation */
+@keyframes shuffleCard {
+  0%   { transform: rotate(var(--base-rot)) translateY(0px); opacity: 0.6; }
+  20%  { transform: rotate(calc(var(--base-rot) - 8deg)) translateY(-18px); opacity: 1; }
+  50%  { transform: rotate(calc(var(--base-rot) + 6deg)) translateY(-8px); opacity: 0.85; }
+  75%  { transform: rotate(calc(var(--base-rot) - 4deg)) translateY(-22px); opacity: 1; }
+  100% { transform: rotate(var(--base-rot)) translateY(0px); opacity: 0.6; }
+}
+
+/* Pulse glow for unflipped result cards */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(107,33,168,0.3); }
+  50%       { box-shadow: 0 0 28px rgba(107,33,168,0.6); }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+/* Step transition */
+@keyframes stepIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.step-in {
+  animation: stepIn 0.5s ease forwards;
 }
