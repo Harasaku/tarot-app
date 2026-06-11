@@ -182,6 +182,7 @@ export default function ReadingPage() {
   const [drawnCards, setDrawnCards] = useState<DrawnCard[]>([]);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
+  const [activeTheme, setActiveTheme] = useState<"love" | "work" | "general">("general");
 
   const selectedSpread = spreadTypes.find((s) => s.id === spreadId)!;
   const allFlipped = drawnCards.length > 0 && drawnCards.every((d) => d.flipped);
@@ -480,6 +481,47 @@ export default function ReadingPage() {
                   <hr className="divider mb-4" style={{ background: `linear-gradient(90deg, transparent, ${isReversed ? "rgba(180,40,40,0.5)" : "#c9a84c"}, transparent)` }} />
 
                   <p className="text-sm leading-loose" style={{ color: "#f0e5d0", opacity: 0.88 }}>{reading.meaning}</p>
+
+                  {/* Advice */}
+                  <div className="mt-5 p-4 rounded-xl"
+                    style={{
+                      background: isReversed ? "rgba(180,40,40,0.07)" : "rgba(201,168,76,0.07)",
+                      border: `1px solid ${isReversed ? "rgba(180,40,40,0.2)" : "rgba(201,168,76,0.18)"}`,
+                    }}>
+                    <p className="text-xs tracking-widest mb-2" style={{ color: isReversed ? "#f87171" : "#c9a84c", opacity: 0.7 }}>アドバイス</p>
+                    <p className="text-sm leading-loose" style={{ color: "#f0e5d0", opacity: 0.88 }}>{reading.advice}</p>
+                  </div>
+
+                  {/* Themes */}
+                  <div className="mt-5">
+                    <p className="text-xs tracking-widest mb-3" style={{ color: isReversed ? "#f87171" : "#c9a84c", opacity: 0.7 }}>テーマ別の解釈</p>
+                    <div className="flex gap-2 mb-3">
+                      {(["love", "work", "general"] as const).map((theme) => {
+                        const label = theme === "love" ? "恋愛" : theme === "work" ? "仕事" : "全般";
+                        const isActive = activeTheme === theme;
+                        return (
+                          <button key={theme} onClick={() => setActiveTheme(theme)}
+                            className="text-xs px-3 py-1.5 rounded-full transition-all duration-200"
+                            style={{
+                              background: isActive ? (isReversed ? "rgba(180,40,40,0.2)" : "rgba(201,168,76,0.15)") : "transparent",
+                              border: isActive
+                                ? `1px solid ${isReversed ? "rgba(180,40,40,0.6)" : "rgba(201,168,76,0.6)"}`
+                                : `1px solid ${isReversed ? "rgba(180,40,40,0.2)" : "rgba(201,168,76,0.2)"}`,
+                              color: isActive ? (isReversed ? "#f87171" : "#c9a84c") : "#f0e5d0",
+                            }}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-sm leading-loose" style={{ color: "#f0e5d0", opacity: 0.85 }}>{reading.themes[activeTheme]}</p>
+                  </div>
+
+                  {/* Numerology */}
+                  <div className="mt-5 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                    <p className="text-xs tracking-widest mb-1" style={{ color: isReversed ? "#f87171" : "#c9a84c", opacity: 0.45 }}>数字の意味</p>
+                    <p className="text-xs leading-relaxed" style={{ color: "#f0e5d0", opacity: 0.45 }}>{drawn.card.numerology}</p>
+                  </div>
 
                   {drawnCards.length > 1 && (
                     <div className="flex gap-2 mt-5 flex-wrap">
