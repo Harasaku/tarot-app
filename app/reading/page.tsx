@@ -35,6 +35,14 @@ function getRoman(cardId: string) {
   return ROMAN[n] ?? "";
 }
 
+const PRESET_QUESTIONS = [
+  "心の中の問いの答えは？　Yes / No",
+  "今日のアドバイス",
+  "いい出会いはある？",
+  "気になる人は私のことをどう思ってる？",
+  "仕事は上手くいく？",
+];
+
 // ── Card back face (decorative) ───────────────────────────────────────────────
 function CardBackFace({ small = false }: { small?: boolean }) {
   const pad = small ? 6 : 10;
@@ -48,9 +56,7 @@ function CardBackFace({ small = false }: { small?: boolean }) {
         background: "linear-gradient(160deg, #1a0533 0%, #2d1b69 50%, #170430 100%)",
       }}
     >
-      {/* Outer frame */}
       <div style={{ position: "absolute", inset: `${pad}px`, border: "0.5px solid rgba(201,168,76,0.35)", borderRadius: small ? 4 : 6, pointerEvents: "none" }} />
-      {/* Crescent moon */}
       <div style={{
         position: "absolute", top: "50%", left: "50%",
         transform: "translate(-50%, -52%)",
@@ -59,7 +65,6 @@ function CardBackFace({ small = false }: { small?: boolean }) {
         background: "rgba(201,168,76,0.18)",
         boxShadow: `inset ${small ? -5 : -9}px 0 0 rgba(23,4,48,0.95), 0 0 ${small ? 6 : 14}px rgba(201,168,76,0.25)`,
       }} />
-      {/* Corner stars */}
       {[["18%","18%"],["78%","16%"],["14%","76%"],["80%","78%"]].map(([t,l], i) => (
         <div key={i} style={{
           position: "absolute", top: t, left: l,
@@ -69,7 +74,6 @@ function CardBackFace({ small = false }: { small?: boolean }) {
           boxShadow: "0 0 4px rgba(201,168,76,0.4)",
         }} />
       ))}
-      {/* Center dot ring */}
       {!small && (
         <div style={{
           position: "absolute", top: "50%", left: "50%",
@@ -79,7 +83,6 @@ function CardBackFace({ small = false }: { small?: boolean }) {
           border: "0.5px solid rgba(201,168,76,0.18)",
         }} />
       )}
-      {/* Shimmer overlay */}
       <div style={{
         position: "absolute", inset: 0,
         background: "linear-gradient(135deg, transparent 38%, rgba(201,168,76,0.05) 50%, transparent 62%)",
@@ -88,18 +91,18 @@ function CardBackFace({ small = false }: { small?: boolean }) {
   );
 }
 
-// ── Fan card ──────────────────────────────────────────────────────────────────
-const CARD_W = 92;
-const CARD_H = 160;
+// ── Line card (grid pick layout) ──────────────────────────────────────────────
+const LINE_CARD_W = 62;
+const LINE_CARD_H = 108;
 
-function FanCard({
-  card, index, total, isPicked, onPick,
+function LineCard({
+  card, isPicked, onPick,
 }: {
-  card: TarotCard; index: number; total: number;
-  isPicked: boolean; onPick: (card: TarotCard) => void;
+  card: TarotCard;
+  isPicked: boolean;
+  onPick: (card: TarotCard) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const angle = -46 + (index / (total - 1)) * 92;
 
   return (
     <div
@@ -107,21 +110,17 @@ function FanCard({
       onMouseEnter={() => !isPicked && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        position: "absolute",
-        bottom: 0,
-        left: `calc(50% - ${CARD_W / 2}px)`,
-        width: `${CARD_W}px`,
-        height: `${CARD_H}px`,
-        transformOrigin: "50% 100%",
-        transform: `rotate(${angle}deg)${hovered ? " translateY(-36px) scale(1.06)" : ""}`,
-        zIndex: hovered ? 50 : index,
-        cursor: isPicked ? "default" : "pointer",
-        opacity: isPicked ? 0.15 : 1,
-        borderRadius: "10px",
-        border: hovered ? "1.5px solid rgba(201,168,76,0.95)" : "1px solid rgba(201,168,76,0.42)",
-        boxShadow: hovered ? "0 0 22px rgba(201,168,76,0.6)" : "0 2px 6px rgba(0,0,0,0.4)",
-        transition: "transform 0.22s ease, border 0.2s, box-shadow 0.2s",
+        width: LINE_CARD_W,
+        height: LINE_CARD_H,
+        borderRadius: 8,
         overflow: "hidden",
+        cursor: isPicked ? "default" : "pointer",
+        opacity: isPicked ? 0.18 : 1,
+        border: hovered && !isPicked ? "1.5px solid rgba(201,168,76,0.95)" : "1px solid rgba(201,168,76,0.42)",
+        boxShadow: hovered && !isPicked ? "0 0 18px rgba(201,168,76,0.55)" : "0 2px 6px rgba(0,0,0,0.4)",
+        transform: hovered && !isPicked ? "translateY(-10px) scale(1.05)" : "none",
+        transition: "transform 0.2s ease, border 0.2s, box-shadow 0.2s, opacity 0.2s",
+        flexShrink: 0,
       } as React.CSSProperties}
     >
       <CardBackFace small />
@@ -132,7 +131,7 @@ function FanCard({
 // ── Shuffle animation ─────────────────────────────────────────────────────────
 function ShuffleAnimation({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onComplete, 2000);
+    const t = setTimeout(onComplete, 3500);
     return () => clearTimeout(t);
   }, [onComplete]);
 
@@ -170,7 +169,7 @@ function buildShareText(question: string, cards: DrawnCard[]): string {
   cards.forEach((d) => {
     lines.push(`${d.position}：${d.card.name}（${d.orientation === "upright" ? "正位置" : "逆位置"}）`);
   });
-  lines.push("", "🔮 神秘のタロット占い");
+  lines.push("", "🔮 ミスティカル 愛葉（AIha）運命のタロット");
   return lines.join("\n");
 }
 
@@ -232,6 +231,10 @@ export default function ReadingPage() {
     setShareState("idle");
   };
 
+  // Result card sizes: larger for 1-card
+  const resultCardW = drawnCards.length === 1 ? 190 : 140;
+  const resultCardH = drawnCards.length === 1 ? 330 : 243;
+
   return (
     <main className="relative min-h-screen flex flex-col items-center px-4 py-10 overflow-hidden">
       <Stars />
@@ -266,7 +269,7 @@ export default function ReadingPage() {
                     ))}
                   </div>
                   <div className="text-xl font-bold mb-1 tracking-wider" style={{ color: "#c9a84c" }}>{spread.name}</div>
-                  <div className="text-sm" style={{ color: "#e8d5b7", opacity: 0.65 }}>{spread.description}</div>
+                  <div className="text-sm" style={{ color: "#f0e5d0", opacity: 0.65 }}>{spread.description}</div>
                 </button>
               ))}
             </div>
@@ -276,21 +279,56 @@ export default function ReadingPage() {
         {/* ── QUESTION ─────────────────────────────────────────── */}
         {step === "question" && (
           <div className="step-in text-center">
-            <p className="text-sm tracking-widest mb-2" style={{ color: "#c9a84c" }}>{selectedSpread.name}</p>
-            <p className="text-base leading-relaxed mb-8" style={{ color: "#e8d5b7", opacity: 0.8 }}>
-              心の中で問いを思い浮かべてください。<br />または、テキストで入力することもできます。
-            </p>
-            <textarea value={question} onChange={(e) => setQuestion(e.target.value)}
-              placeholder="例：仕事の方向性について教えてください..."
-              className="w-full p-4 rounded-xl text-sm leading-relaxed resize-none outline-none transition-all duration-300" rows={3}
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.3)", color: "#e8d5b7" }}
-              onFocus={(e) => { e.currentTarget.style.border = "1px solid rgba(201,168,76,0.7)"; e.currentTarget.style.boxShadow = "0 0 15px rgba(201,168,76,0.15)"; }}
-              onBlur={(e) => { e.currentTarget.style.border = "1px solid rgba(201,168,76,0.3)"; e.currentTarget.style.boxShadow = "none"; }}
-            />
+            <p className="text-sm tracking-widest mb-4" style={{ color: "#c9a84c" }}>{selectedSpread.name}</p>
+
+            {spreadId === "one" ? (
+              /* 1枚引き：プリセット選択肢 */
+              <>
+                <p className="text-base leading-relaxed mb-6" style={{ color: "#f0e5d0", opacity: 0.8 }}>
+                  今日の問いを選んでください
+                </p>
+                <div className="flex flex-col gap-3 mb-8 text-left">
+                  {PRESET_QUESTIONS.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => setQuestion(q)}
+                      className="px-5 py-4 rounded-xl text-sm tracking-wide text-left transition-all duration-200 hover:scale-[1.01]"
+                      style={{
+                        background: question === q ? "rgba(201,168,76,0.12)" : "rgba(255,255,255,0.03)",
+                        border: question === q ? "1.5px solid rgba(201,168,76,0.75)" : "1px solid rgba(201,168,76,0.25)",
+                        color: question === q ? "#c9a84c" : "#f0e5d0",
+                        boxShadow: question === q ? "0 0 14px rgba(201,168,76,0.18)" : "none",
+                      }}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              /* 3枚引き：フリーテキスト */
+              <>
+                <p className="text-base leading-relaxed mb-8" style={{ color: "#f0e5d0", opacity: 0.8 }}>
+                  心の中で問いを思い浮かべてください。<br />または、テキストで入力することもできます。
+                </p>
+                <textarea value={question} onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="例：仕事の方向性について教えてください..."
+                  className="w-full p-4 rounded-xl text-sm leading-relaxed resize-none outline-none transition-all duration-300" rows={3}
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.3)", color: "#f0e5d0" }}
+                  onFocus={(e) => { e.currentTarget.style.border = "1px solid rgba(201,168,76,0.7)"; e.currentTarget.style.boxShadow = "0 0 15px rgba(201,168,76,0.15)"; }}
+                  onBlur={(e) => { e.currentTarget.style.border = "1px solid rgba(201,168,76,0.3)"; e.currentTarget.style.boxShadow = "none"; }}
+                />
+              </>
+            )}
+
             <div className="flex gap-4 justify-center mt-6">
-              <button onClick={() => setStep("spread")} className="px-6 py-3 rounded-full text-sm tracking-wider transition-all hover:opacity-70"
+              <button onClick={() => { setStep("spread"); setQuestion(""); }}
+                className="px-6 py-3 rounded-full text-sm tracking-wider transition-all hover:opacity-70"
                 style={{ border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c" }}>戻る</button>
-              <button onClick={handleStartShuffle} className="px-8 py-3 rounded-full text-sm tracking-wider font-medium transition-all hover:scale-105"
+              <button
+                onClick={handleStartShuffle}
+                disabled={spreadId === "one" && !question}
+                className="px-8 py-3 rounded-full text-sm tracking-wider font-medium transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "linear-gradient(135deg, #7c4f00 0%, #c9a84c 50%, #7c4f00 100%)", color: "#0a0414", border: "1px solid #c9a84c", boxShadow: "0 0 15px rgba(201,168,76,0.3)" }}>
                 カードを引く
               </button>
@@ -301,30 +339,32 @@ export default function ReadingPage() {
         {/* ── SHUFFLE ──────────────────────────────────────────── */}
         {step === "shuffle" && <ShuffleAnimation onComplete={() => setStep("pick")} />}
 
-        {/* ── PICK (fan) ───────────────────────────────────────── */}
+        {/* ── PICK (grid) ───────────────────────────────────────── */}
         {step === "pick" && (
           <div className="step-in flex flex-col items-center">
-            <div className="text-center w-full" style={{ minHeight: "100px" }}>
+            <div className="text-center w-full mb-5">
               <span className="text-2xl font-bold tracking-wider" style={{ color: "#c9a84c" }}>{drawnCards.length}</span>
-              <span className="text-sm ml-1" style={{ color: "#e8d5b7", opacity: 0.5 }}>/{selectedSpread.cardCount} 枚</span>
-              <p className="text-xs mt-1 mb-5" style={{ color: "#e8d5b7", opacity: 0.45 }}>直感でカードを選んでください</p>
-              {drawnCards.length > 0 && (
-                <div className="flex justify-center gap-3">
-                  {drawnCards.map((d) => (
-                    <div key={d.card.id} className="text-center">
-                      <p className="text-xs mb-1" style={{ color: "#c9a84c", opacity: 0.7 }}>{d.position}</p>
-                      <div style={{ width: 28, height: 49, borderRadius: 4, overflow: "hidden", border: "1px solid #c9a84c", boxShadow: "0 0 10px rgba(201,168,76,0.45)" }}>
-                        <CardBackFace small />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <span className="text-sm ml-1" style={{ color: "#f0e5d0", opacity: 0.5 }}>/{selectedSpread.cardCount} 枚</span>
+              <p className="text-xs mt-1" style={{ color: "#f0e5d0", opacity: 0.45 }}>直感でカードを選んでください</p>
             </div>
-            <div className="relative" style={{ height: "260px", width: "100%", maxWidth: "700px" }}>
-              {shuffledDeck.map((card, i) => {
+            {drawnCards.length > 0 && (
+              <div className="flex justify-center gap-3 mb-5">
+                {drawnCards.map((d) => (
+                  <div key={d.card.id} className="text-center">
+                    <p className="text-xs mb-1" style={{ color: "#c9a84c", opacity: 0.7 }}>{d.position}</p>
+                    <div style={{ width: 28, height: 49, borderRadius: 4, overflow: "hidden", border: "1px solid #c9a84c", boxShadow: "0 0 10px rgba(201,168,76,0.45)" }}>
+                      <CardBackFace small />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap justify-center gap-2 w-full max-w-lg">
+              {shuffledDeck.map((card) => {
                 const isPicked = drawnCards.some((d) => d.card.id === card.id);
-                return <FanCard key={card.id} card={card} index={i} total={shuffledDeck.length} isPicked={isPicked} onPick={handlePickCard} />;
+                return (
+                  <LineCard key={card.id} card={card} isPicked={isPicked} onPick={handlePickCard} />
+                );
               })}
             </div>
           </div>
@@ -337,7 +377,7 @@ export default function ReadingPage() {
               <div className="text-center mb-8 px-6 py-4 rounded-2xl mx-auto"
                 style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.18)", maxWidth: "420px" }}>
                 <p className="text-xs tracking-widest mb-1" style={{ color: "#c9a84c", opacity: 0.55 }}>あなたの問い</p>
-                <p className="text-sm leading-relaxed" style={{ color: "#e8d5b7" }}>{question}</p>
+                <p className="text-sm leading-relaxed" style={{ color: "#f0e5d0" }}>{question}</p>
               </div>
             )}
 
@@ -356,7 +396,7 @@ export default function ReadingPage() {
                     {/* Card */}
                     <div
                       className={`card-container ${!drawn.flipped ? "pulse-glow" : ""}`}
-                      style={{ width: 130, height: 226, cursor: drawn.flipped ? "default" : "pointer", borderRadius: 12 }}
+                      style={{ width: resultCardW, height: resultCardH, cursor: drawn.flipped ? "default" : "pointer", borderRadius: 12 }}
                       onClick={() => !drawn.flipped && handleFlipCard(index)}
                     >
                       <div className={`card-inner ${drawn.flipped ? "flipped" : ""}`}>
@@ -367,9 +407,8 @@ export default function ReadingPage() {
                         {/* Front */}
                         <div className="card-face card-front" style={{ boxShadow: drawn.flipped ? (isReversed ? "0 0 28px rgba(180,40,40,0.35)" : "0 0 30px rgba(201,168,76,0.35)") : "none", overflow: "hidden" }}>
                           <div className="w-full h-full relative" style={{ transform: isReversed ? "rotate(180deg)" : "none" }}>
-                            <Image src={drawn.card.imagePath} alt={drawn.card.name} fill className="object-contain" sizes="130px" />
+                            <Image src={drawn.card.imagePath} alt={drawn.card.name} fill className="object-contain" sizes={`${resultCardW}px`} />
                           </div>
-                          {/* Roman numeral overlay */}
                           {drawn.flipped && (
                             <div style={{ position: "absolute", bottom: 6, right: 8, fontSize: "10px", color: "rgba(201,168,76,0.7)", fontWeight: "bold", textShadow: "0 1px 3px rgba(0,0,0,0.8)", pointerEvents: "none", transform: isReversed ? "rotate(180deg)" : "none" }}>
                               {getRoman(drawn.card.id)}
@@ -383,13 +422,12 @@ export default function ReadingPage() {
                     {drawn.flipped && (
                       <div className="mt-3 text-center fade-in-up">
                         <p className="text-sm font-medium tracking-wider" style={{ color: "#c9a84c" }}>{drawn.card.name}</p>
-                        {/* Reversed badge */}
                         {isReversed ? (
                           <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(180,40,40,0.2)", border: "1px solid rgba(180,40,40,0.5)", color: "#f87171" }}>
                             逆位置
                           </span>
                         ) : (
-                          <p className="text-xs mt-0.5" style={{ color: "#e8d5b7", opacity: 0.45 }}>正位置</p>
+                          <p className="text-xs mt-0.5" style={{ color: "#f0e5d0", opacity: 0.45 }}>正位置</p>
                         )}
                       </div>
                     )}
@@ -419,7 +457,7 @@ export default function ReadingPage() {
                         {drawn.card.name}
                         <span className="text-base ml-2 font-normal opacity-50">{getRoman(drawn.card.id)}</span>
                       </h3>
-                      <p className="text-xs tracking-widest" style={{ color: "#e8d5b7", opacity: 0.42 }}>
+                      <p className="text-xs tracking-widest" style={{ color: "#f0e5d0", opacity: 0.42 }}>
                         {drawn.card.nameEn}&nbsp;·&nbsp;{drawn.position}&nbsp;·&nbsp;
                         {isReversed ? <span style={{ color: "#f87171" }}>逆位置</span> : "正位置"}
                       </p>
@@ -441,7 +479,7 @@ export default function ReadingPage() {
 
                   <hr className="divider mb-4" style={{ background: `linear-gradient(90deg, transparent, ${isReversed ? "rgba(180,40,40,0.5)" : "#c9a84c"}, transparent)` }} />
 
-                  <p className="text-sm leading-loose" style={{ color: "#e8d5b7", opacity: 0.88 }}>{reading.meaning}</p>
+                  <p className="text-sm leading-loose" style={{ color: "#f0e5d0", opacity: 0.88 }}>{reading.meaning}</p>
 
                   {drawnCards.length > 1 && (
                     <div className="flex gap-2 mt-5 flex-wrap">
@@ -451,7 +489,7 @@ export default function ReadingPage() {
                           style={{
                             background: i === activeCardIndex ? "rgba(201,168,76,0.15)" : "transparent",
                             border: i === activeCardIndex ? "1px solid rgba(201,168,76,0.6)" : "1px solid rgba(201,168,76,0.15)",
-                            color: i === activeCardIndex ? "#c9a84c" : "#e8d5b7",
+                            color: i === activeCardIndex ? "#c9a84c" : "#f0e5d0",
                             opacity: d.flipped ? 1 : 0.35,
                           }}>
                           {d.position}
@@ -473,7 +511,6 @@ export default function ReadingPage() {
                   </p>
                 </div>
 
-                {/* Share button */}
                 <button onClick={handleShare}
                   className="w-full py-3 rounded-xl text-sm tracking-wider transition-all hover:opacity-80 flex items-center justify-center gap-2"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.25)", color: "#c9a84c" }}>

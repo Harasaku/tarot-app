@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0414;
-  --foreground: #e8d5b7;
+  --background: #140b24;
+  --foreground: #f0e5d0;
   --gold: #c9a84c;
+  --sakura: #f9c8d8;
   --purple: #6b21a8;
 }
 
@@ -35,7 +36,6 @@ body {
 
 .star {
   position: absolute;
-  background: white;
   border-radius: 50%;
   animation: twinkle linear infinite;
 }
@@ -97,7 +97,7 @@ body {
 }
 
 .shimmer-text {
-  background: linear-gradient(90deg, #c9a84c, #fff8e1, #c9a84c, #fff8e1, #c9a84c);
+  background: linear-gradient(90deg, #c9a84c, #fff8e1, #f9c8d8, #c9a84c, #fff8e1, #c9a84c);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

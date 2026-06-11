@@ -15,6 +15,8 @@ export default function Stars() {
     for (let i = 0; i < count; i++) {
       const star = document.createElement("div");
       const size = Math.random() * 2.5 + 0.5;
+      const isSakura = Math.random() < 0.12;
+      const color = isSakura ? "rgba(249,168,212,0.9)" : "white";
       star.className = "star";
       star.style.cssText = `
         width: ${size}px;
@@ -24,6 +26,7 @@ export default function Stars() {
         animation-duration: ${Math.random() * 4 + 2}s;
         animation-delay: ${Math.random() * 4}s;
         opacity: ${Math.random() * 0.7 + 0.1};
+        background: ${color};
       `;
       fragment.appendChild(star);
     }
