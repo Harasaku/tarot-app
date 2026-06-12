@@ -35,13 +35,28 @@ function getRoman(cardId: string) {
   return ROMAN[n] ?? "";
 }
 
-const PRESET_QUESTIONS = [
-  "心の中の問いの答えは？　Yes / No",
-  "今日のアドバイス",
-  "いい出会いはある？",
-  "気になる人は私のことをどう思ってる？",
-  "仕事は上手くいく？",
+type Theme = "yesno" | "general" | "love" | "work" | "money" | "interpersonal";
+
+const PRESET_QUESTIONS: { theme: Theme; label: string }[] = [
+  { theme: "yesno", label: "Yes/No / 心の中の問いの答えは？ Yes/No" },
+  { theme: "general", label: "全般 / 今日のアドバイス" },
+  { theme: "love", label: "恋愛 / いい出会いはある？" },
+  { theme: "love", label: "恋愛 / 気になる人は私のことをどう思ってる？" },
+  { theme: "work", label: "仕事 / 仕事はうまくいく？" },
+  { theme: "money", label: "お金 / 今日の金運アップアクションは？" },
+  { theme: "interpersonal", label: "対人 / わたしの周囲からの印象は？" },
 ];
+
+const THEME_LABELS: Record<Theme, string> = {
+  yesno: "Yes/No",
+  general: "全般",
+  love: "恋愛",
+  work: "仕事",
+  money: "お金",
+  interpersonal: "対人",
+};
+
+const THREE_CARD_THEMES: Theme[] = ["yesno", "general", "love", "work", "money", "interpersonal"];
 
 // ── Card back face (decorative) ───────────────────────────────────────────────
 function CardBackFace({ small = false }: { small?: boolean }) {
@@ -182,7 +197,7 @@ export default function ReadingPage() {
   const [drawnCards, setDrawnCards] = useState<DrawnCard[]>([]);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
-  const [activeTheme, setActiveTheme] = useState<"love" | "work" | "general">("general");
+  const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
 
   const selectedSpread = spreadTypes.find((s) => s.id === spreadId)!;
   const allFlipped = drawnCards.length > 0 && drawnCards.every((d) => d.flipped);
@@ -230,6 +245,7 @@ export default function ReadingPage() {
     setShuffledDeck([]);
     setActiveCardIndex(null);
     setShareState("idle");
+    setSelectedTheme(null);
   };
 
   // Result card sizes: larger for 1-card
@@ -291,26 +307,46 @@ export default function ReadingPage() {
                 <div className="flex flex-col gap-3 mb-8 text-left">
                   {PRESET_QUESTIONS.map((q) => (
                     <button
-                      key={q}
-                      onClick={() => setQuestion(q)}
+                      key={q.label}
+                      onClick={() => { setQuestion(q.label); setSelectedTheme(q.theme); }}
                       className="px-5 py-4 rounded-xl text-sm tracking-wide text-left transition-all duration-200 hover:scale-[1.01]"
                       style={{
-                        background: question === q ? "rgba(201,168,76,0.12)" : "rgba(255,255,255,0.03)",
-                        border: question === q ? "1.5px solid rgba(201,168,76,0.75)" : "1px solid rgba(201,168,76,0.25)",
-                        color: question === q ? "#c9a84c" : "#f0e5d0",
-                        boxShadow: question === q ? "0 0 14px rgba(201,168,76,0.18)" : "none",
+                        background: question === q.label ? "rgba(201,168,76,0.12)" : "rgba(255,255,255,0.03)",
+                        border: question === q.label ? "1.5px solid rgba(201,168,76,0.75)" : "1px solid rgba(201,168,76,0.25)",
+                        color: question === q.label ? "#c9a84c" : "#f0e5d0",
+                        boxShadow: question === q.label ? "0 0 14px rgba(201,168,76,0.18)" : "none",
                       }}
                     >
-                      {q}
+                      {q.label}
                     </button>
                   ))}
                 </div>
               </>
             ) : (
-              /* 3枚引き：フリーテキスト */
+              /* 3枚引き：テーマ選択＋フリーテキスト */
               <>
-                <p className="text-base leading-relaxed mb-8" style={{ color: "#f0e5d0", opacity: 0.8 }}>
-                  心の中で問いを思い浮かべてください。<br />または、テキストで入力することもできます。
+                <p className="text-base leading-relaxed mb-5" style={{ color: "#f0e5d0", opacity: 0.8 }}>
+                  テーマを選んでください
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center mb-6">
+                  {THREE_CARD_THEMES.map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setSelectedTheme(t)}
+                      className="px-4 py-2 rounded-full text-sm tracking-wider transition-all duration-200 hover:scale-105"
+                      style={{
+                        background: selectedTheme === t ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.03)",
+                        border: selectedTheme === t ? "1.5px solid rgba(201,168,76,0.75)" : "1px solid rgba(201,168,76,0.25)",
+                        color: selectedTheme === t ? "#c9a84c" : "#f0e5d0",
+                        boxShadow: selectedTheme === t ? "0 0 14px rgba(201,168,76,0.18)" : "none",
+                      }}
+                    >
+                      {THEME_LABELS[t]}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm mb-4" style={{ color: "#f0e5d0", opacity: 0.6 }}>
+                  心の中で問いを思い浮かべてください。または、テキストで入力することもできます。
                 </p>
                 <textarea value={question} onChange={(e) => setQuestion(e.target.value)}
                   placeholder="例：仕事の方向性について教えてください..."
@@ -328,7 +364,7 @@ export default function ReadingPage() {
                 style={{ border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c" }}>戻る</button>
               <button
                 onClick={handleStartShuffle}
-                disabled={spreadId === "one" && !question}
+                disabled={(spreadId === "one" && !question) || (spreadId === "three" && !selectedTheme)}
                 className="px-8 py-3 rounded-full text-sm tracking-wider font-medium transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "linear-gradient(135deg, #7c4f00 0%, #c9a84c 50%, #7c4f00 100%)", color: "#0a0414", border: "1px solid #c9a84c", boxShadow: "0 0 15px rgba(201,168,76,0.3)" }}>
                 カードを引く
@@ -493,35 +529,14 @@ export default function ReadingPage() {
                   </div>
 
                   {/* Themes */}
-                  <div className="mt-5">
-                    <p className="text-xs tracking-widest mb-3" style={{ color: isReversed ? "#f87171" : "#c9a84c", opacity: 0.7 }}>テーマ別の解釈</p>
-                    <div className="flex gap-2 mb-3">
-                      {(["love", "work", "general"] as const).map((theme) => {
-                        const label = theme === "love" ? "恋愛" : theme === "work" ? "仕事" : "全般";
-                        const isActive = activeTheme === theme;
-                        return (
-                          <button key={theme} onClick={() => setActiveTheme(theme)}
-                            className="text-xs px-3 py-1.5 rounded-full transition-all duration-200"
-                            style={{
-                              background: isActive ? (isReversed ? "rgba(180,40,40,0.2)" : "rgba(201,168,76,0.15)") : "transparent",
-                              border: isActive
-                                ? `1px solid ${isReversed ? "rgba(180,40,40,0.6)" : "rgba(201,168,76,0.6)"}`
-                                : `1px solid ${isReversed ? "rgba(180,40,40,0.2)" : "rgba(201,168,76,0.2)"}`,
-                              color: isActive ? (isReversed ? "#f87171" : "#c9a84c") : "#f0e5d0",
-                            }}>
-                            {label}
-                          </button>
-                        );
-                      })}
+                  {selectedTheme && (
+                    <div className="mt-5">
+                      <p className="text-xs tracking-widest mb-2" style={{ color: isReversed ? "#f87171" : "#c9a84c", opacity: 0.7 }}>
+                        {THEME_LABELS[selectedTheme]}の解釈
+                      </p>
+                      <p className="text-sm leading-loose" style={{ color: "#f0e5d0", opacity: 0.85 }}>{reading.themes[selectedTheme]}</p>
                     </div>
-                    <p className="text-sm leading-loose" style={{ color: "#f0e5d0", opacity: 0.85 }}>{reading.themes[activeTheme]}</p>
-                  </div>
-
-                  {/* Numerology */}
-                  <div className="mt-5 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                    <p className="text-xs tracking-widest mb-1" style={{ color: isReversed ? "#f87171" : "#c9a84c", opacity: 0.45 }}>数字の意味</p>
-                    <p className="text-xs leading-relaxed" style={{ color: "#f0e5d0", opacity: 0.45 }}>{drawn.card.numerology}</p>
-                  </div>
+                  )}
 
                   {drawnCards.length > 1 && (
                     <div className="flex gap-2 mt-5 flex-wrap">
