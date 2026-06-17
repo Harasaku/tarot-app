@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   if (
     !Array.isArray(cards) ||
     cards.length < 1 ||
-    cards.length > 3 ||
+    cards.length > 5 ||
     (theme !== undefined && theme !== null && !VALID_THEMES.has(theme as string)) ||
     (typeof question === "string" && question.length > 300)
   ) {

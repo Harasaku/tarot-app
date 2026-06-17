@@ -35,6 +35,18 @@ function getRoman(cardId: string) {
   return ROMAN[n] ?? "";
 }
 
+// Pentagram layout — 5 card slots (left/top in px) within a 320×430 container
+// Card size: 72×125px. Star SVG connects card centers: (160,82)→(225,333)→(48,158)→(272,158)→(95,333)
+const PENTA_SLOTS = [
+  { left: 124, top: 0   },  // 本質  (top)
+  { left: 236, top: 75  },  // 行動  (upper-right)
+  { left: 189, top: 250 },  // 現実  (lower-right)
+  { left: 59,  top: 250 },  // 感情  (lower-left)
+  { left: 12,  top: 75  },  // 導き  (upper-left)
+] as const;
+const PENTA_CW = 72;
+const PENTA_CH = 125;
+
 type Theme = "yesno" | "general" | "love" | "work" | "money" | "interpersonal";
 
 const PRESET_QUESTIONS: { theme: Theme; label: string }[] = [
@@ -286,9 +298,9 @@ export default function ReadingPage() {
     }
   };
 
-  // Result card sizes: larger for 1-card
-  const resultCardW = drawnCards.length === 1 ? 190 : 140;
-  const resultCardH = drawnCards.length === 1 ? 330 : 243;
+  // Result card sizes
+  const resultCardW = spreadId === "pentagram" ? PENTA_CW : drawnCards.length === 1 ? 190 : 140;
+  const resultCardH = spreadId === "pentagram" ? PENTA_CH : drawnCards.length === 1 ? 330 : 243;
 
   return (
     <main className="relative min-h-screen flex flex-col items-center px-4 py-10 overflow-hidden">
@@ -460,56 +472,104 @@ export default function ReadingPage() {
               ✦ &nbsp;カードをタップして開く&nbsp; ✦
             </p>
 
-            {/* Cards row */}
-            <div className={`flex justify-center mb-10 ${drawnCards.length === 1 ? "gap-0" : "gap-4 sm:gap-8 flex-wrap sm:flex-nowrap"}`}>
-              {drawnCards.map((drawn, index) => {
-                const isReversed = drawn.orientation === "reversed";
-                return (
-                  <div key={drawn.card.id} className="flex flex-col items-center">
-                    <p className="text-xs tracking-widest mb-3" style={{ color: "#c9a84c", opacity: 0.65 }}>{drawn.position}</p>
-
-                    {/* Card */}
-                    <div
-                      className={`card-container ${!drawn.flipped ? "pulse-glow" : ""}`}
-                      style={{ width: resultCardW, height: resultCardH, cursor: drawn.flipped ? "default" : "pointer", borderRadius: 12 }}
-                      onClick={() => !drawn.flipped && handleFlipCard(index)}
-                    >
-                      <div className={`card-inner ${drawn.flipped ? "flipped" : ""}`}>
-                        {/* Back */}
-                        <div className="card-face card-back" style={{ overflow: "hidden" }}>
-                          <CardBackFace />
-                        </div>
-                        {/* Front */}
-                        <div className="card-face card-front" style={{ boxShadow: drawn.flipped ? (isReversed ? "0 0 28px rgba(180,40,40,0.35)" : "0 0 30px rgba(201,168,76,0.35)") : "none", overflow: "hidden" }}>
-                          <div className="w-full h-full relative" style={{ transform: isReversed ? "rotate(180deg)" : "none" }}>
-                            <Image src={drawn.card.imagePath} alt={drawn.card.name} fill className="object-contain" sizes={`${resultCardW}px`} />
+            {/* Cards — pentagram or row */}
+            {spreadId === "pentagram" ? (
+              /* ── Pentagram layout ─────────────────────────────── */
+              <div className="relative mx-auto mb-10" style={{ width: 320, height: 430 }}>
+                <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 320 430">
+                  <path d="M 160,82 L 225,333 L 48,158 L 272,158 L 95,333 Z" fill="none" stroke="rgba(201,168,76,0.18)" strokeWidth="1.5" />
+                </svg>
+                {drawnCards.map((drawn, index) => {
+                  const slot = PENTA_SLOTS[index];
+                  const isReversed = drawn.orientation === "reversed";
+                  return (
+                    <div key={drawn.card.id} style={{ position: "absolute", left: slot.left, top: slot.top, width: PENTA_CW }}>
+                      <p className="text-center mb-1" style={{ fontSize: "10px", color: "#c9a84c", opacity: 0.7, letterSpacing: "0.05em" }}>{drawn.position}</p>
+                      <div
+                        className={`card-container ${!drawn.flipped ? "pulse-glow" : ""}`}
+                        style={{ width: PENTA_CW, height: PENTA_CH, cursor: drawn.flipped ? "default" : "pointer", borderRadius: 8 }}
+                        onClick={() => !drawn.flipped && handleFlipCard(index)}
+                      >
+                        <div className={`card-inner ${drawn.flipped ? "flipped" : ""}`}>
+                          <div className="card-face card-back" style={{ overflow: "hidden" }}>
+                            <CardBackFace small />
                           </div>
-                          {drawn.flipped && (
-                            <div style={{ position: "absolute", bottom: 6, right: 8, fontSize: "10px", color: "rgba(201,168,76,0.7)", fontWeight: "bold", textShadow: "0 1px 3px rgba(0,0,0,0.8)", pointerEvents: "none", transform: isReversed ? "rotate(180deg)" : "none" }}>
-                              {getRoman(drawn.card.id)}
+                          <div className="card-face card-front" style={{ boxShadow: drawn.flipped ? (isReversed ? "0 0 16px rgba(180,40,40,0.4)" : "0 0 18px rgba(201,168,76,0.4)") : "none", overflow: "hidden" }}>
+                            <div className="w-full h-full relative" style={{ transform: isReversed ? "rotate(180deg)" : "none" }}>
+                              <Image src={drawn.card.imagePath} alt={drawn.card.name} fill className="object-contain" sizes={`${PENTA_CW}px`} />
                             </div>
+                            {drawn.flipped && (
+                              <div style={{ position: "absolute", bottom: 3, right: 4, fontSize: "8px", color: "rgba(201,168,76,0.7)", fontWeight: "bold", textShadow: "0 1px 3px rgba(0,0,0,0.8)", pointerEvents: "none", transform: isReversed ? "rotate(180deg)" : "none" }}>
+                                {getRoman(drawn.card.id)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {drawn.flipped && (
+                        <div className="mt-1 text-center fade-in-up">
+                          <p style={{ fontSize: "10px", color: "#c9a84c", fontWeight: 500 }}>{drawn.card.name}</p>
+                          {isReversed && (
+                            <span style={{ fontSize: "9px", color: "#f87171", background: "rgba(180,40,40,0.2)", border: "1px solid rgba(180,40,40,0.5)", borderRadius: 9999, padding: "0 4px" }}>逆</span>
                           )}
                         </div>
-                      </div>
+                      )}
                     </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* ── Standard row layout ──────────────────────────── */
+              <div className={`flex justify-center mb-10 ${drawnCards.length === 1 ? "gap-0" : "gap-4 sm:gap-8 flex-wrap sm:flex-nowrap"}`}>
+                {drawnCards.map((drawn, index) => {
+                  const isReversed = drawn.orientation === "reversed";
+                  return (
+                    <div key={drawn.card.id} className="flex flex-col items-center">
+                      <p className="text-xs tracking-widest mb-3" style={{ color: "#c9a84c", opacity: 0.65 }}>{drawn.position}</p>
 
-                    {/* Label below card */}
-                    {drawn.flipped && (
-                      <div className="mt-3 text-center fade-in-up">
-                        <p className="text-sm font-medium tracking-wider" style={{ color: "#c9a84c" }}>{drawn.card.name}</p>
-                        {isReversed ? (
-                          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(180,40,40,0.2)", border: "1px solid rgba(180,40,40,0.5)", color: "#f87171" }}>
-                            逆位置
-                          </span>
-                        ) : (
-                          <p className="text-xs mt-0.5" style={{ color: "#f0e5d0", opacity: 0.45 }}>正位置</p>
-                        )}
+                      {/* Card */}
+                      <div
+                        className={`card-container ${!drawn.flipped ? "pulse-glow" : ""}`}
+                        style={{ width: resultCardW, height: resultCardH, cursor: drawn.flipped ? "default" : "pointer", borderRadius: 12 }}
+                        onClick={() => !drawn.flipped && handleFlipCard(index)}
+                      >
+                        <div className={`card-inner ${drawn.flipped ? "flipped" : ""}`}>
+                          {/* Back */}
+                          <div className="card-face card-back" style={{ overflow: "hidden" }}>
+                            <CardBackFace />
+                          </div>
+                          {/* Front */}
+                          <div className="card-face card-front" style={{ boxShadow: drawn.flipped ? (isReversed ? "0 0 28px rgba(180,40,40,0.35)" : "0 0 30px rgba(201,168,76,0.35)") : "none", overflow: "hidden" }}>
+                            <div className="w-full h-full relative" style={{ transform: isReversed ? "rotate(180deg)" : "none" }}>
+                              <Image src={drawn.card.imagePath} alt={drawn.card.name} fill className="object-contain" sizes={`${resultCardW}px`} />
+                            </div>
+                            {drawn.flipped && (
+                              <div style={{ position: "absolute", bottom: 6, right: 8, fontSize: "10px", color: "rgba(201,168,76,0.7)", fontWeight: "bold", textShadow: "0 1px 3px rgba(0,0,0,0.8)", pointerEvents: "none", transform: isReversed ? "rotate(180deg)" : "none" }}>
+                                {getRoman(drawn.card.id)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+
+                      {/* Label below card */}
+                      {drawn.flipped && (
+                        <div className="mt-3 text-center fade-in-up">
+                          <p className="text-sm font-medium tracking-wider" style={{ color: "#c9a84c" }}>{drawn.card.name}</p>
+                          {isReversed ? (
+                            <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(180,40,40,0.2)", border: "1px solid rgba(180,40,40,0.5)", color: "#f87171" }}>
+                              逆位置
+                            </span>
+                          ) : (
+                            <p className="text-xs mt-0.5" style={{ color: "#f0e5d0", opacity: 0.45 }}>正位置</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Interpretation panel */}
             {activeCardIndex !== null && drawnCards[activeCardIndex]?.flipped && (() => {

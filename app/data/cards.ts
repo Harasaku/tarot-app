@@ -870,4 +870,17 @@ export const spreadTypes = [
       { label: "未来", x: 80, y: 50 },
     ],
   },
+  {
+    id: "pentagram",
+    name: "ペンタグラム",
+    description: "5枚で深層まで読み解く総合スプレッド",
+    cardCount: 5,
+    positions: [
+      { label: "本質", x: 50, y: 8 },
+      { label: "行動", x: 85, y: 35 },
+      { label: "現実", x: 70, y: 82 },
+      { label: "感情", x: 30, y: 82 },
+      { label: "導き", x: 15, y: 35 },
+    ],
+  },
 ];
