@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
 
 const THEME_LABELS: Record<string, string> = {
   yesno: "Yes/No",
@@ -22,6 +23,23 @@ export async function POST(request: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return new Response("Server configuration error", { status: 500 });
+  }
+
+  // Supabase が設定済みの場合のみ有料会員チェックを行う
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return new Response("有料会員限定の機能です", { status: 403 });
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "paid") {
+      return new Response("有料会員限定の機能です", { status: 403 });
+    }
   }
 
   let body: unknown;

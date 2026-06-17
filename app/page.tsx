@@ -93,6 +93,14 @@ export default function HomePage() {
         >
           ✦ &nbsp; 大アルカナ 22枚 &nbsp; ✦
         </p>
+
+        <Link
+          href="/auth"
+          className="mt-4 inline-block text-xs tracking-widest transition-opacity hover:opacity-70"
+          style={{ color: "#c9a84c", opacity: 0.35 }}
+        >
+          ログイン / 会員登録
+        </Link>
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Stars from "../components/Stars";
+import { createClient } from "@/lib/supabase/client";
 import {
   majorArcana,
   spreadTypes,
@@ -47,6 +48,36 @@ const PENTA_SLOTS = [
 ] as const;
 const PENTA_CW = 72;
 const PENTA_CH = 125;
+
+// ── ティア設定 ────────────────────────────────────────────────────────────────
+const TIER_CONFIG = {
+  guest: { maxUses: 3, spreads: ["one"],                       aiReading: false, label: "ゲスト" },
+  free:  { maxUses: 4, spreads: ["one", "three"],              aiReading: false, label: "無料会員" },
+  paid:  { maxUses: 6, spreads: ["one", "three", "pentagram"], aiReading: true,  label: "有料会員" },
+} as const;
+
+type Tier = keyof typeof TIER_CONFIG;
+
+function getJSTDateString(): string {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+}
+
+function getGuestUsage(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const s = localStorage.getItem("tarot_guest_usage");
+    if (!s) return 0;
+    const d = JSON.parse(s);
+    return d.date === getJSTDateString() ? (d.count ?? 0) : 0;
+  } catch { return 0; }
+}
+
+function setGuestUsage(count: number): void {
+  localStorage.setItem(
+    "tarot_guest_usage",
+    JSON.stringify({ date: getJSTDateString(), count })
+  );
+}
 
 type Theme = "yesno" | "general" | "love" | "work" | "money" | "interpersonal";
 
@@ -213,15 +244,61 @@ export default function ReadingPage() {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
   const [aiReading, setAiReading] = useState("");
   const [aiState, setAiState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [tier, setTier] = useState<Tier>("guest");
+  const [usageCount, setUsageCount] = useState(0);
+  const [tierLoading, setTierLoading] = useState(true);
+
+  // 認証・ティア・利用回数を読み込む
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      // Supabase未設定時は全機能解放（開発用）
+      setTier("paid");
+      setUsageCount(0);
+      setTierLoading(false);
+      return;
+    }
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        setTier("guest");
+        setUsageCount(getGuestUsage());
+        setTierLoading(false);
+        return;
+      }
+      const res = await fetch("/api/usage");
+      if (res.ok) {
+        const data = await res.json();
+        setTier(data.role === "paid" ? "paid" : "free");
+        setUsageCount(data.count);
+      }
+      setTierLoading(false);
+    });
+  }, []);
 
   const selectedSpread = spreadTypes.find((s) => s.id === spreadId)!;
   const allFlipped = drawnCards.length > 0 && drawnCards.every((d) => d.flipped);
 
-  const handleStartShuffle = useCallback(() => {
+  const handleStartShuffle = useCallback(async () => {
+    const config = TIER_CONFIG[tier];
+    if (usageCount >= config.maxUses) return; // disabled ボタン側でガードするが念のため
+
+    // 利用回数インクリメント
+    if (tier === "guest") {
+      const next = usageCount + 1;
+      setGuestUsage(next);
+      setUsageCount(next);
+    } else {
+      const res = await fetch("/api/usage", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setUsageCount(data.count);
+      }
+    }
+
     setShuffledDeck(shuffleArray(majorArcana));
     setDrawnCards([]);
     setStep("shuffle");
-  }, []);
+  }, [tier, usageCount]);
 
   const handlePickCard = useCallback(
     (card: TarotCard) => {
@@ -318,6 +395,39 @@ export default function ReadingPage() {
             タロットリーディング
           </h2>
           <hr className="divider mt-4 mx-auto w-32" />
+
+          {/* ユーザーステータス */}
+          {!tierLoading && (
+            <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
+              <span className="text-xs tracking-widest" style={{ color: "#c9a84c", opacity: 0.7 }}>
+                {TIER_CONFIG[tier].label}
+              </span>
+              <span className="text-xs" style={{ color: "#f0e5d0", opacity: 0.4 }}>·</span>
+              <span className="text-xs" style={{ color: "#f0e5d0", opacity: 0.5 }}>
+                今日の残り {Math.max(0, TIER_CONFIG[tier].maxUses - usageCount)} 回
+              </span>
+              {tier === "guest" && (
+                <Link href="/auth" className="text-xs tracking-wider transition-opacity hover:opacity-80"
+                  style={{ color: "#c9a84c", opacity: 0.6, textDecoration: "underline" }}>
+                  ログイン
+                </Link>
+              )}
+              {tier !== "guest" && (
+                <button
+                  onClick={async () => {
+                    const supabase = createClient();
+                    await supabase.auth.signOut();
+                    setTier("guest");
+                    setUsageCount(getGuestUsage());
+                  }}
+                  className="text-xs tracking-wider transition-opacity hover:opacity-80"
+                  style={{ color: "#f0e5d0", opacity: 0.35, textDecoration: "underline" }}
+                >
+                  ログアウト
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── SPREAD ──────────────────────────────────────────── */}
@@ -325,21 +435,37 @@ export default function ReadingPage() {
           <div className="step-in">
             <p className="text-center text-sm tracking-widest mb-8" style={{ color: "#c9a84c" }}>スプレッドを選んでください</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {spreadTypes.map((spread) => (
-                <button key={spread.id} onClick={() => { setSpreadId(spread.id); setStep("question"); }}
-                  className="p-6 rounded-2xl text-left transition-all duration-300 hover:scale-105"
-                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.3)" }}>
-                  <div className="flex gap-2 mb-5">
-                    {Array.from({ length: spread.cardCount }).map((_, i) => (
-                      <div key={i} style={{ width: 22, height: 38, borderRadius: 3, overflow: "hidden", border: "1px solid rgba(201,168,76,0.55)" }}>
-                        <CardBackFace small />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-xl font-bold mb-1 tracking-wider" style={{ color: "#c9a84c" }}>{spread.name}</div>
-                  <div className="text-sm" style={{ color: "#f0e5d0", opacity: 0.65 }}>{spread.description}</div>
-                </button>
-              ))}
+              {spreadTypes.map((spread) => {
+                const allowed = (TIER_CONFIG[tier].spreads as readonly string[]).includes(spread.id);
+                return (
+                  <button
+                    key={spread.id}
+                    onClick={() => { if (allowed) { setSpreadId(spread.id); setStep("question"); } }}
+                    disabled={!allowed}
+                    className={`p-6 rounded-2xl text-left transition-all duration-300 ${allowed ? "hover:scale-105" : "cursor-not-allowed"}`}
+                    style={{
+                      background: allowed ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.01)",
+                      border: `1px solid ${allowed ? "rgba(201,168,76,0.3)" : "rgba(201,168,76,0.1)"}`,
+                      opacity: allowed ? 1 : 0.5,
+                    }}
+                  >
+                    <div className="flex gap-2 mb-5 items-center">
+                      {Array.from({ length: spread.cardCount }).map((_, i) => (
+                        <div key={i} style={{ width: 22, height: 38, borderRadius: 3, overflow: "hidden", border: `1px solid ${allowed ? "rgba(201,168,76,0.55)" : "rgba(201,168,76,0.2)"}` }}>
+                          <CardBackFace small />
+                        </div>
+                      ))}
+                      {!allowed && (
+                        <span className="ml-auto text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", color: "#c9a84c" }}>
+                          有料
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xl font-bold mb-1 tracking-wider" style={{ color: allowed ? "#c9a84c" : "#8a7a5a" }}>{spread.name}</div>
+                    <div className="text-sm" style={{ color: "#f0e5d0", opacity: allowed ? 0.65 : 0.35 }}>{spread.description}</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -415,11 +541,23 @@ export default function ReadingPage() {
                 style={{ border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c" }}>戻る</button>
               <button
                 onClick={handleStartShuffle}
-                disabled={(spreadId === "one" && !question) || (spreadId === "three" && !selectedTheme)}
+                disabled={
+                  (spreadId === "one" && !question) ||
+                  ((spreadId === "three" || spreadId === "pentagram") && !selectedTheme) ||
+                  usageCount >= TIER_CONFIG[tier].maxUses
+                }
                 className="px-8 py-3 rounded-full text-sm tracking-wider font-medium transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "linear-gradient(135deg, #7c4f00 0%, #c9a84c 50%, #7c4f00 100%)", color: "#0a0414", border: "1px solid #c9a84c", boxShadow: "0 0 15px rgba(201,168,76,0.3)" }}>
                 カードを引く
               </button>
+              {usageCount >= TIER_CONFIG[tier].maxUses && (
+                <p className="text-xs text-center mt-2" style={{ color: "#f87171" }}>
+                  今日の上限（{TIER_CONFIG[tier].maxUses}回）に達しました。日本時間0時にリセットされます。
+                  {tier === "guest" && (
+                    <><br /><Link href="/auth" style={{ color: "#c9a84c", textDecoration: "underline" }}>ログイン</Link>すると回数が増えます。</>
+                  )}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -668,20 +806,29 @@ export default function ReadingPage() {
                 </div>
 
                 {/* AI Reading */}
-                {aiState === "idle" && (
-                  <button
-                    onClick={handleAiReading}
-                    className="w-full py-4 rounded-xl text-sm tracking-wider font-medium transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(107,33,168,0.3), rgba(45,27,105,0.5))",
-                      border: "1px solid rgba(201,168,76,0.45)",
-                      color: "#c9a84c",
-                      boxShadow: "0 0 20px rgba(107,33,168,0.2)",
-                    }}
-                  >
-                    <span style={{ fontSize: "16px" }}>🔮</span>
-                    <span>愛葉からの総合リーディングを聞く</span>
-                  </button>
+                {TIER_CONFIG[tier].aiReading ? (
+                  aiState === "idle" && (
+                    <button
+                      onClick={handleAiReading}
+                      className="w-full py-4 rounded-xl text-sm tracking-wider font-medium transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(107,33,168,0.3), rgba(45,27,105,0.5))",
+                        border: "1px solid rgba(201,168,76,0.45)",
+                        color: "#c9a84c",
+                        boxShadow: "0 0 20px rgba(107,33,168,0.2)",
+                      }}
+                    >
+                      <span style={{ fontSize: "16px" }}>🔮</span>
+                      <span>愛葉からの総合リーディングを聞く</span>
+                    </button>
+                  )
+                ) : (
+                  <div className="w-full py-4 rounded-xl text-sm text-center"
+                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(201,168,76,0.15)", color: "#f0e5d0", opacity: 0.5 }}>
+                    <span style={{ fontSize: "14px" }}>🔮</span>
+                    <span className="ml-2">愛葉からの総合リーディングは</span>
+                    <Link href="/auth" style={{ color: "#c9a84c", textDecoration: "underline", marginLeft: 4 }}>有料会員限定</Link>
+                  </div>
                 )}
 
                 {aiState === "loading" && (
