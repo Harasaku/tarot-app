@@ -198,6 +198,8 @@ export default function ReadingPage() {
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
+  const [aiReading, setAiReading] = useState("");
+  const [aiState, setAiState] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   const selectedSpread = spreadTypes.find((s) => s.id === spreadId)!;
   const allFlipped = drawnCards.length > 0 && drawnCards.every((d) => d.flipped);
@@ -246,6 +248,42 @@ export default function ReadingPage() {
     setActiveCardIndex(null);
     setShareState("idle");
     setSelectedTheme(null);
+    setAiReading("");
+    setAiState("idle");
+  };
+
+  const handleAiReading = async () => {
+    setAiState("loading");
+    setAiReading("");
+    try {
+      const res = await fetch("/api/reading", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cards: drawnCards.map((d) => ({
+            name: d.card.name,
+            nameEn: d.card.nameEn,
+            position: d.position,
+            orientation: d.orientation,
+          })),
+          question,
+          theme: selectedTheme,
+        }),
+      });
+      if (!res.ok || !res.body) throw new Error("API error");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+        setAiReading(text);
+      }
+      setAiState(text.trim() ? "done" : "error");
+    } catch {
+      setAiState("error");
+    }
   };
 
   // Result card sizes: larger for 1-card
@@ -558,7 +596,7 @@ export default function ReadingPage() {
               );
             })()}
 
-            {/* All revealed — completion banner + share */}
+            {/* All revealed — AI reading + share */}
             {allFlipped && (
               <div className="fade-in-up mb-6 space-y-3">
                 <div className="text-center rounded-xl py-4"
@@ -567,6 +605,72 @@ export default function ReadingPage() {
                     ✦ &nbsp; すべてのカードが開かれました &nbsp; ✦
                   </p>
                 </div>
+
+                {/* AI Reading */}
+                {aiState === "idle" && (
+                  <button
+                    onClick={handleAiReading}
+                    className="w-full py-4 rounded-xl text-sm tracking-wider font-medium transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(107,33,168,0.3), rgba(45,27,105,0.5))",
+                      border: "1px solid rgba(201,168,76,0.45)",
+                      color: "#c9a84c",
+                      boxShadow: "0 0 20px rgba(107,33,168,0.2)",
+                    }}
+                  >
+                    <span style={{ fontSize: "16px" }}>🔮</span>
+                    <span>愛葉からの総合リーディングを聞く</span>
+                  </button>
+                )}
+
+                {aiState === "loading" && (
+                  <div className="rounded-2xl p-6"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(26,5,51,0.85), rgba(45,27,105,0.35))",
+                      border: "1px solid rgba(201,168,76,0.28)",
+                    }}>
+                    <p className="text-xs tracking-widest mb-3" style={{ color: "#c9a84c", opacity: 0.7 }}>
+                      ✦ &nbsp; 愛葉がカードを読み解いています... &nbsp; ✦
+                    </p>
+                    <p className="text-sm leading-loose whitespace-pre-wrap" style={{ color: "#f0e5d0", opacity: 0.88 }}>
+                      {aiReading}
+                      <span style={{ display: "inline-block", width: "2px", height: "1em", background: "#c9a84c", marginLeft: "2px", animation: "blink 1s step-end infinite", verticalAlign: "text-bottom" }} />
+                    </p>
+                  </div>
+                )}
+
+                {(aiState === "done" || aiState === "error") && (
+                  <div className="rounded-2xl p-6"
+                    style={{
+                      background: aiState === "error"
+                        ? "linear-gradient(135deg, rgba(50,10,10,0.85), rgba(80,20,20,0.3))"
+                        : "linear-gradient(135deg, rgba(26,5,51,0.85), rgba(45,27,105,0.35))",
+                      border: `1px solid ${aiState === "error" ? "rgba(180,40,40,0.3)" : "rgba(201,168,76,0.28)"}`,
+                      boxShadow: aiState === "error" ? "none" : "0 0 40px rgba(107,33,168,0.2)",
+                    }}>
+                    <p className="text-xs tracking-widest mb-3" style={{ color: "#c9a84c", opacity: 0.7 }}>
+                      ✦ &nbsp; 愛葉からのメッセージ &nbsp; ✦
+                    </p>
+                    {aiState === "error" ? (
+                      <p className="text-sm" style={{ color: "#f87171" }}>
+                        メッセージの取得に失敗しました。もう一度お試しください。
+                      </p>
+                    ) : (
+                      <p className="text-sm leading-loose whitespace-pre-wrap" style={{ color: "#f0e5d0", opacity: 0.9 }}>
+                        {aiReading}
+                      </p>
+                    )}
+                    {aiState === "error" && (
+                      <button
+                        onClick={handleAiReading}
+                        className="mt-3 text-xs px-4 py-2 rounded-full transition-all hover:opacity-70"
+                        style={{ border: "1px solid rgba(201,168,76,0.3)", color: "#c9a84c" }}
+                      >
+                        再試行
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <button onClick={handleShare}
                   className="w-full py-3 rounded-xl text-sm tracking-wider transition-all hover:opacity-80 flex items-center justify-center gap-2"
