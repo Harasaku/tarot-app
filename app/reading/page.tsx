@@ -35,14 +35,15 @@ function getRoman(cardId: string) {
   return ROMAN[n] ?? "";
 }
 
-// Pentagram layout — 5 card slots (left/top in px) within a 320×430 container
-// Card size: 72×125px. Star SVG connects card centers: (160,82)→(225,333)→(48,158)→(272,158)→(95,333)
+// Pentagram layout — 5 card slots (left/top in px) within a 360×400 container
+// Card size: 72×125px. Star SVG connects card centers: (180,95)→(256,330)→(56,185)→(304,185)→(104,330)
+// slot.top = card_center_y - CH/2 - 20(label), slot.left = card_center_x - CW/2
 const PENTA_SLOTS = [
-  { left: 124, top: 0   },  // 本質  (top)
-  { left: 236, top: 75  },  // 行動  (upper-right)
-  { left: 189, top: 250 },  // 現実  (lower-right)
-  { left: 59,  top: 250 },  // 感情  (lower-left)
-  { left: 12,  top: 75  },  // 導き  (upper-left)
+  { left: 144, top: 12  },  // 本質  (top)
+  { left: 268, top: 102 },  // 行動  (upper-right)
+  { left: 220, top: 247 },  // 現実  (lower-right)
+  { left: 68,  top: 247 },  // 感情  (lower-left)
+  { left: 20,  top: 102 },  // 導き  (upper-left)
 ] as const;
 const PENTA_CW = 72;
 const PENTA_CH = 125;
@@ -475,9 +476,9 @@ export default function ReadingPage() {
             {/* Cards — pentagram or row */}
             {spreadId === "pentagram" ? (
               /* ── Pentagram layout ─────────────────────────────── */
-              <div className="relative mx-auto mb-10" style={{ width: 320, height: 430 }}>
-                <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 320 430">
-                  <path d="M 160,82 L 225,333 L 48,158 L 272,158 L 95,333 Z" fill="none" stroke="rgba(201,168,76,0.18)" strokeWidth="1.5" />
+              <div className="relative mx-auto mb-10" style={{ width: 360, height: 400 }}>
+                <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 360 400">
+                  <path d="M 180,95 L 256,330 L 56,185 L 304,185 L 104,330 Z" fill="none" stroke="rgba(201,168,76,0.18)" strokeWidth="1.5" />
                 </svg>
                 {drawnCards.map((drawn, index) => {
                   const slot = PENTA_SLOTS[index];
