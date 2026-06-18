@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Stars from "../components/Stars";
 import { createClient } from "@/lib/supabase/client";
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "reset";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -39,12 +39,21 @@ export default function AuthPage() {
         router.push("/");
         router.refresh();
       }
-    } else {
+    } else if (mode === "register") {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setError(error.message);
       } else {
         setMessage("確認メールを送信しました。メール内のリンクをクリックしてください。");
+      }
+    } else {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      });
+      if (error) {
+        setError("メール送信に失敗しました。もう一度お試しください。");
+      } else {
+        setMessage("パスワード再設定メールを送信しました。メール内のリンクをクリックしてください。");
       }
     }
     setLoading(false);
@@ -81,7 +90,7 @@ export default function AuthPage() {
             className="shimmer-text text-2xl font-bold tracking-widest mt-4"
             style={{ fontFamily: "'Hiragino Mincho ProN', 'Yu Mincho', serif" }}
           >
-            {mode === "login" ? "ログイン" : "新規登録"}
+            {mode === "login" ? "ログイン" : mode === "register" ? "新規登録" : "パスワード再設定"}
           </h2>
           <hr className="divider mt-3 mx-auto w-24" />
         </div>
@@ -94,23 +103,25 @@ export default function AuthPage() {
           }}
         >
           {/* Mode toggle */}
-          <div className="flex gap-2 mb-6">
-            {(["login", "register"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => switchMode(m)}
-                className="flex-1 py-2 rounded-full text-sm tracking-wider transition-all"
-                style={{
-                  background:
-                    mode === m ? "rgba(201,168,76,0.12)" : "transparent",
-                  border: `1px solid ${mode === m ? "rgba(201,168,76,0.6)" : "rgba(201,168,76,0.2)"}`,
-                  color: mode === m ? "#c9a84c" : "#f0e5d0",
-                }}
-              >
-                {m === "login" ? "ログイン" : "新規登録"}
-              </button>
-            ))}
-          </div>
+          {mode !== "reset" && (
+            <div className="flex gap-2 mb-6">
+              {(["login", "register"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => switchMode(m)}
+                  className="flex-1 py-2 rounded-full text-sm tracking-wider transition-all"
+                  style={{
+                    background:
+                      mode === m ? "rgba(201,168,76,0.12)" : "transparent",
+                    border: `1px solid ${mode === m ? "rgba(201,168,76,0.6)" : "rgba(201,168,76,0.2)"}`,
+                    color: mode === m ? "#c9a84c" : "#f0e5d0",
+                  }}
+                >
+                  {m === "login" ? "ログイン" : "新規登録"}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Email/Password form */}
           <form onSubmit={handleEmailAuth} className="space-y-4 mb-5">
@@ -129,22 +140,24 @@ export default function AuthPage() {
                 e.currentTarget.style.border = "1px solid rgba(201,168,76,0.25)";
               }}
             />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="パスワード（8文字以上）"
-              required
-              minLength={8}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-              style={inputStyle}
-              onFocus={(e) => {
-                e.currentTarget.style.border = "1px solid rgba(201,168,76,0.65)";
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.border = "1px solid rgba(201,168,76,0.25)";
-              }}
-            />
+            {mode !== "reset" && (
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="パスワード（8文字以上）"
+                required
+                minLength={8}
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+                style={inputStyle}
+                onFocus={(e) => {
+                  e.currentTarget.style.border = "1px solid rgba(201,168,76,0.65)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.border = "1px solid rgba(201,168,76,0.25)";
+                }}
+              />
+            )}
 
             {error && (
               <p className="text-xs text-center" style={{ color: "#f87171" }}>
@@ -169,9 +182,32 @@ export default function AuthPage() {
                 boxShadow: "0 0 15px rgba(201,168,76,0.3)",
               }}
             >
-              {loading ? "..." : mode === "login" ? "ログイン" : "登録する"}
+              {loading ? "..." : mode === "login" ? "ログイン" : mode === "register" ? "登録する" : "再設定メールを送る"}
             </button>
           </form>
+
+          {mode === "login" && (
+            <div className="text-center">
+              <button
+                onClick={() => switchMode("reset")}
+                className="text-xs transition-opacity hover:opacity-70"
+                style={{ color: "#9ca3af" }}
+              >
+                パスワードをお忘れですか？
+              </button>
+            </div>
+          )}
+          {mode === "reset" && (
+            <div className="text-center">
+              <button
+                onClick={() => switchMode("login")}
+                className="text-xs transition-opacity hover:opacity-70"
+                style={{ color: "#9ca3af" }}
+              >
+                ← ログインに戻る
+              </button>
+            </div>
+          )}
 
         </div>
       </div>
