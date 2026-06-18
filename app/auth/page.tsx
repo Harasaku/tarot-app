@@ -48,7 +48,7 @@ export default function AuthPage() {
       }
     } else {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
       });
       if (error) {
         setError("メール送信に失敗しました。もう一度お試しください。");
