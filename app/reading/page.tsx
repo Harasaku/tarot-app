@@ -449,6 +449,9 @@ export default function ReadingPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {spreadTypes.map((spread) => {
                 const allowed = (TIER_CONFIG[tier].spreads as readonly string[]).includes(spread.id);
+                // ロックされている場合のバッジ：無料会員で使えるなら「要登録」、有料会員のみなら「有料」
+                const unlockedByFree = (TIER_CONFIG.free.spreads as readonly string[]).includes(spread.id);
+                const lockLabel = unlockedByFree ? "要登録" : "有料";
                 return (
                   <button
                     key={spread.id}
@@ -469,7 +472,7 @@ export default function ReadingPage() {
                       ))}
                       {!allowed && (
                         <span className="ml-auto text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", color: "#c9a84c" }}>
-                          有料
+                          {lockLabel}
                         </span>
                       )}
                     </div>
