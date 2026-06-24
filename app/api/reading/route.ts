@@ -12,6 +12,15 @@ const THEME_LABELS: Record<string, string> = {
 
 const VALID_THEMES = new Set(Object.keys(THEME_LABELS));
 
+// AI解釈の1日あたり上限（有料会員は6回/日。再生成などの余裕を見て上限を設定）。
+// クライアントを介さず直接APIを叩かれてもコストが青天井にならないようサーバー側で制限する。
+const AI_DAILY_LIMIT = 12;
+
+// 日本時間(UTC+9)の日付文字列を返す
+function getJSTDate(): string {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+}
+
 interface CardInput {
   name: string;
   nameEn: string;
@@ -39,6 +48,16 @@ export async function POST(request: Request) {
       .single();
     if (profile?.role !== "paid") {
       return new Response("有料会員限定の機能です", { status: 403 });
+    }
+
+    // コスト悪用防止：AI解釈の利用回数をサーバー側でアトミックに加算し、
+    // 1日の上限を超えたら拒否する（高価なAI呼び出しの前に止める）。
+    const { data: aiCount, error: aiErr } = await supabase.rpc(
+      "increment_ai_usage",
+      { p_user_id: user.id, p_date: getJSTDate() }
+    );
+    if (!aiErr && typeof aiCount === "number" && aiCount > AI_DAILY_LIMIT) {
+      return new Response("本日のAI解釈の利用上限に達しました", { status: 429 });
     }
   }
 

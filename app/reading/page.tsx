@@ -412,6 +412,18 @@ export default function ReadingPage() {
                   ログイン
                 </Link>
               )}
+              {tier === "free" && (
+                <Link href="/pricing" className="text-xs tracking-wider transition-opacity hover:opacity-80"
+                  style={{ color: "#c9a84c", opacity: 0.7, textDecoration: "underline" }}>
+                  有料会員になる
+                </Link>
+              )}
+              {tier === "paid" && (
+                <Link href="/pricing" className="text-xs tracking-wider transition-opacity hover:opacity-80"
+                  style={{ color: "#c9a84c", opacity: 0.6, textDecoration: "underline" }}>
+                  プラン管理
+                </Link>
+              )}
               {tier !== "guest" && (
                 <button
                   onClick={async () => {
@@ -827,7 +839,7 @@ export default function ReadingPage() {
                     style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(201,168,76,0.15)", color: "#f0e5d0", opacity: 0.5 }}>
                     <span style={{ fontSize: "14px" }}>🔮</span>
                     <span className="ml-2">愛葉からの総合リーディングは</span>
-                    <Link href="/auth" style={{ color: "#c9a84c", textDecoration: "underline", marginLeft: 4 }}>有料会員限定</Link>
+                    <Link href="/pricing" style={{ color: "#c9a84c", textDecoration: "underline", marginLeft: 4 }}>有料会員限定</Link>
                   </div>
                 )}
 

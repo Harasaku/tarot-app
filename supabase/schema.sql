@@ -9,6 +9,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Stripe決済用カラム（既存テーブルにも追加できるよう ADD COLUMN IF NOT EXISTS を使用）
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS stripe_customer_id text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS subscription_status text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS current_period_end timestamptz;
+
 -- ユーザー登録時に自動でprofileを作成
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
@@ -33,6 +38,9 @@ CREATE TABLE IF NOT EXISTS public.daily_usage (
   count integer NOT NULL DEFAULT 0,
   CONSTRAINT unique_user_date UNIQUE (user_id, usage_date)
 );
+
+-- AI解釈の日次利用回数（コスト悪用防止のためサーバー側で上限管理する）
+ALTER TABLE public.daily_usage ADD COLUMN IF NOT EXISTS ai_count integer NOT NULL DEFAULT 0;
 
 -- RLS（行レベルセキュリティ）
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -67,6 +75,21 @@ BEGIN
   ON CONFLICT (user_id, usage_date)
   DO UPDATE SET count = public.daily_usage.count + 1
   RETURNING count INTO new_count;
+  RETURN new_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- AI解釈の利用回数をアトミックにインクリメントする関数
+CREATE OR REPLACE FUNCTION public.increment_ai_usage(p_user_id uuid, p_date date)
+RETURNS integer AS $$
+DECLARE
+  new_count integer;
+BEGIN
+  INSERT INTO public.daily_usage (user_id, usage_date, count, ai_count)
+  VALUES (p_user_id, p_date, 0, 1)
+  ON CONFLICT (user_id, usage_date)
+  DO UPDATE SET ai_count = public.daily_usage.ai_count + 1
+  RETURNING ai_count INTO new_count;
   RETURN new_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
