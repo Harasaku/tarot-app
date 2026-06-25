@@ -1,8 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe/server";
 
+// 有料プラン停止に伴い、新規の有料会員登録（決済）を受け付けない。
+const CHECKOUT_ENABLED = false;
+
 // 有料会員登録のための Stripe Checkout セッションを作成する
 export async function POST() {
+  if (!CHECKOUT_ENABLED) {
+    return Response.json({ error: "現在、新規の有料会員登録は受け付けておりません" }, { status: 403 });
+  }
+
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_ID) {
     return Response.json({ error: "決済が設定されていません" }, { status: 500 });
   }

@@ -28,7 +28,15 @@ interface CardInput {
   orientation: "upright" | "reversed";
 }
 
+// AI総合リーディング機能の停止フラグ。
+// 有料プラン停止に伴い無効化。再開時は true に戻す。
+const AI_READING_ENABLED = false;
+
 export async function POST(request: Request) {
+  if (!AI_READING_ENABLED) {
+    return new Response("この機能は現在ご利用いただけません", { status: 403 });
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return new Response("Server configuration error", { status: 500 });

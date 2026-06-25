@@ -51,9 +51,9 @@ const PENTA_CH = 125;
 
 // ── ティア設定 ────────────────────────────────────────────────────────────────
 const TIER_CONFIG = {
-  guest: { maxUses: 3, spreads: ["one"],                       aiReading: false, label: "ゲスト" },
-  free:  { maxUses: 4, spreads: ["one", "three"],              aiReading: false, label: "無料会員" },
-  paid:  { maxUses: 6, spreads: ["one", "three", "pentagram"], aiReading: true,  label: "有料会員" },
+  guest: { maxUses: 3, spreads: ["one", "three", "pentagram"], aiReading: false, label: "ゲスト" },
+  free:  { maxUses: 3, spreads: ["one", "three", "pentagram"], aiReading: false, label: "会員" },
+  paid:  { maxUses: 3, spreads: ["one", "three", "pentagram"], aiReading: false, label: "会員" },
 } as const;
 
 type Tier = keyof typeof TIER_CONFIG;
@@ -412,18 +412,6 @@ export default function ReadingPage() {
                   ログイン
                 </Link>
               )}
-              {tier === "free" && (
-                <Link href="/pricing" className="text-xs tracking-wider transition-opacity hover:opacity-80"
-                  style={{ color: "#c9a84c", opacity: 0.7, textDecoration: "underline" }}>
-                  有料会員になる
-                </Link>
-              )}
-              {tier === "paid" && (
-                <Link href="/pricing" className="text-xs tracking-wider transition-opacity hover:opacity-80"
-                  style={{ color: "#c9a84c", opacity: 0.6, textDecoration: "underline" }}>
-                  プラン管理
-                </Link>
-              )}
               {tier !== "guest" && (
                 <button
                   onClick={async () => {
@@ -568,9 +556,6 @@ export default function ReadingPage() {
               {usageCount >= TIER_CONFIG[tier].maxUses && (
                 <p className="text-xs text-center mt-2" style={{ color: "#f87171" }}>
                   今日の上限（{TIER_CONFIG[tier].maxUses}回）に達しました。日本時間0時にリセットされます。
-                  {tier === "guest" && (
-                    <><br /><Link href="/auth" style={{ color: "#c9a84c", textDecoration: "underline" }}>ログイン</Link>すると回数が増えます。</>
-                  )}
                 </p>
               )}
             </div>
@@ -820,31 +805,7 @@ export default function ReadingPage() {
                   </p>
                 </div>
 
-                {/* AI Reading */}
-                {TIER_CONFIG[tier].aiReading ? (
-                  aiState === "idle" && (
-                    <button
-                      onClick={handleAiReading}
-                      className="w-full py-4 rounded-xl text-sm tracking-wider font-medium transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(107,33,168,0.3), rgba(45,27,105,0.5))",
-                        border: "1px solid rgba(201,168,76,0.45)",
-                        color: "#c9a84c",
-                        boxShadow: "0 0 20px rgba(107,33,168,0.2)",
-                      }}
-                    >
-                      <span style={{ fontSize: "16px" }}>🔮</span>
-                      <span>愛葉からの総合リーディングを聞く</span>
-                    </button>
-                  )
-                ) : (
-                  <div className="w-full py-4 rounded-xl text-sm text-center"
-                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(201,168,76,0.15)", color: "#f0e5d0", opacity: 0.5 }}>
-                    <span style={{ fontSize: "14px" }}>🔮</span>
-                    <span className="ml-2">愛葉からの総合リーディングは</span>
-                    <Link href="/pricing" style={{ color: "#c9a84c", textDecoration: "underline", marginLeft: 4 }}>有料会員限定</Link>
-                  </div>
-                )}
+                {/* AI Reading（愛葉からの総合リーディング）は現在停止中のため非表示 */}
 
                 {aiState === "loading" && (
                   <div className="rounded-2xl p-6"
