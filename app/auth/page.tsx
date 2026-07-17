@@ -40,9 +40,12 @@ export default function AuthPage() {
         router.refresh();
       }
     } else if (mode === "register") {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setError(error.message);
+      } else if (data.user?.identities?.length === 0) {
+        // 登録済みアドレスの場合、Supabaseはメールを送らずに成功を返す（identitiesが空になる）
+        setError("このメールアドレスは登録済みです。ログインしてください。");
       } else {
         setMessage("確認メールを送信しました。メール内のリンクをクリックしてください。");
       }
