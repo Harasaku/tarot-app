@@ -94,12 +94,59 @@ export default function HomePage() {
           ✦ &nbsp; 大アルカナ 22枚 &nbsp; ✦
         </p>
 
+        {/* プラン比較（ゲスト / 会員） */}
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+          <div
+            className="p-5 rounded-2xl"
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(201,168,76,0.2)",
+            }}
+          >
+            <div
+              className="text-sm font-bold tracking-widest mb-3"
+              style={{ color: "#c9a84c", opacity: 0.8 }}
+            >
+              ゲスト
+              <span className="ml-2 font-normal text-xs" style={{ color: "#f0e5d0", opacity: 0.5 }}>
+                登録不要
+              </span>
+            </div>
+            <ul className="space-y-2 text-sm" style={{ color: "#f0e5d0", opacity: 0.75 }}>
+              <li>✦ 1枚引き・3枚引き</li>
+              <li>✦ 1日3回まで</li>
+            </ul>
+          </div>
+          <div
+            className="p-5 rounded-2xl"
+            style={{
+              background: "rgba(201,168,76,0.07)",
+              border: "1px solid rgba(201,168,76,0.45)",
+              boxShadow: "0 0 18px rgba(201,168,76,0.15)",
+            }}
+          >
+            <div
+              className="text-sm font-bold tracking-widest mb-3"
+              style={{ color: "#c9a84c" }}
+            >
+              会員
+              <span className="ml-2 font-normal text-xs" style={{ color: "#f9c8d8", opacity: 0.8 }}>
+                無料登録
+              </span>
+            </div>
+            <ul className="space-y-2 text-sm" style={{ color: "#f0e5d0", opacity: 0.9 }}>
+              <li>✦ すべてのスプレッド（ペンタグラム解放）</li>
+              <li>✦ 1日5回まで</li>
+            </ul>
+          </div>
+        </div>
+
         <Link
           href="/auth"
-          className="mt-4 inline-block text-xs tracking-widest transition-opacity hover:opacity-70"
-          style={{ color: "#c9a84c", opacity: 0.35 }}
+          className="mt-6 inline-block text-sm tracking-widest transition-opacity hover:opacity-70"
+          style={{ color: "#c9a84c", opacity: 0.7, textDecoration: "underline" }}
         >
-          ログイン / 会員登録
+          ログイン / 会員登録（無料）
         </Link>
       </div>
     </main>

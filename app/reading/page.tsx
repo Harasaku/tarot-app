@@ -51,9 +51,9 @@ const PENTA_CH = 125;
 
 // ── ティア設定 ────────────────────────────────────────────────────────────────
 const TIER_CONFIG = {
-  guest: { maxUses: 3, spreads: ["one", "three", "pentagram"], aiReading: false, label: "ゲスト" },
-  free:  { maxUses: 3, spreads: ["one", "three", "pentagram"], aiReading: false, label: "会員" },
-  paid:  { maxUses: 3, spreads: ["one", "three", "pentagram"], aiReading: false, label: "会員" },
+  guest: { maxUses: 3, spreads: ["one", "three"], aiReading: false, label: "ゲスト" },
+  free:  { maxUses: 5, spreads: ["one", "three", "pentagram"], aiReading: false, label: "会員" },
+  paid:  { maxUses: 5, spreads: ["one", "three", "pentagram"], aiReading: false, label: "会員" },
 } as const;
 
 type Tier = keyof typeof TIER_CONFIG;
@@ -437,15 +437,20 @@ export default function ReadingPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {spreadTypes.map((spread) => {
                 const allowed = (TIER_CONFIG[tier].spreads as readonly string[]).includes(spread.id);
-                // ロックされている場合のバッジ：無料会員で使えるなら「要登録」、有料会員のみなら「有料」
+                // ロックされている場合のバッジ：無料会員で使えるなら「無料登録で解放」、有料会員のみなら「有料」
                 const unlockedByFree = (TIER_CONFIG.free.spreads as readonly string[]).includes(spread.id);
-                const lockLabel = unlockedByFree ? "要登録" : "有料";
+                const lockLabel = unlockedByFree ? "無料登録で解放" : "有料";
+                // ゲストがロック中のスプレッドを押したら登録ページへ誘導する
+                const locksToAuth = !allowed && unlockedByFree && tier === "guest";
                 return (
                   <button
                     key={spread.id}
-                    onClick={() => { if (allowed) { setSpreadId(spread.id); setStep("question"); } }}
-                    disabled={!allowed}
-                    className={`p-6 rounded-2xl text-left transition-all duration-300 ${allowed ? "hover:scale-105" : "cursor-not-allowed"}`}
+                    onClick={() => {
+                      if (allowed) { setSpreadId(spread.id); setStep("question"); }
+                      else if (locksToAuth) { window.location.assign("/auth"); }
+                    }}
+                    disabled={!allowed && !locksToAuth}
+                    className={`p-6 rounded-2xl text-left transition-all duration-300 ${allowed ? "hover:scale-105" : locksToAuth ? "cursor-pointer hover:scale-105" : "cursor-not-allowed"}`}
                     style={{
                       background: allowed ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.01)",
                       border: `1px solid ${allowed ? "rgba(201,168,76,0.3)" : "rgba(201,168,76,0.1)"}`,
