@@ -8,6 +8,8 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
+  // OGP画像などの相対URLを本番の絶対URLに解決する（apexはwwwへリダイレクトされるためwwwを正とする）
+  metadataBase: new URL("https://www.tarot-aiha.com"),
   title: "神秘のタロット占い",
   description: "タロットカードがあなたの未来を照らします",
 };

@@ -11,6 +11,7 @@ import {
   type TarotCard,
   type CardOrientation,
 } from "../data/cards";
+import { encodeShareParams } from "@/lib/share";
 
 type Step = "spread" | "question" | "shuffle" | "pick" | "result";
 
@@ -221,7 +222,7 @@ function ShuffleAnimation({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-// ── Share helper ──────────────────────────────────────────────────────────────
+// ── Share helpers ─────────────────────────────────────────────────────────────
 function buildShareText(question: string, cards: DrawnCard[]): string {
   const lines = ["✦ タロット占いの結果 ✦", ""];
   if (question) lines.push(`【問い】${question}`, "");
@@ -230,6 +231,23 @@ function buildShareText(question: string, cards: DrawnCard[]): string {
   });
   lines.push("", "🔮 ミスティカル 愛葉（AIha）運命のタロット");
   return lines.join("\n");
+}
+
+// 結果ページのURL。開いた人がカードと解釈を見られる（OGP画像付き）
+function buildShareUrl(spreadId: string, cards: DrawnCard[]): string {
+  const params = encodeShareParams(
+    spreadId,
+    cards.map((d) => ({ cardId: d.card.id, orientation: d.orientation }))
+  );
+  return `${window.location.origin}/share?${params}`;
+}
+
+// Xポスト用の短文（問いは含めない。URLのOGP画像がカードを見せてくれる）
+function buildPostText(cards: DrawnCard[]): string {
+  const names = cards
+    .map((d) => `${d.card.name}${d.orientation === "reversed" ? "（逆）" : ""}`)
+    .join("・");
+  return `タロットを引いたら「${names}」が出ました🔮\n#タロット占い #愛葉タロット`;
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -321,13 +339,20 @@ export default function ReadingPage() {
 
   const handleShare = async () => {
     const text = buildShareText(question, drawnCards);
+    const url = buildShareUrl(spreadId, drawnCards);
     if (navigator.share) {
-      await navigator.share({ text }).catch(() => {});
+      await navigator.share({ text, url }).catch(() => {});
     } else {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(`${text}\n${url}`);
       setShareState("copied");
       setTimeout(() => setShareState("idle"), 2000);
     }
+  };
+
+  const handlePostToX = () => {
+    const url = buildShareUrl(spreadId, drawnCards);
+    const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(buildPostText(drawnCards))}&url=${encodeURIComponent(url)}`;
+    window.open(intent, "_blank", "noopener,noreferrer");
   };
 
   const handleReset = () => {
@@ -861,15 +886,22 @@ export default function ReadingPage() {
                   </div>
                 )}
 
-                <button onClick={handleShare}
-                  className="w-full py-3 rounded-xl text-sm tracking-wider transition-all hover:opacity-80 flex items-center justify-center gap-2"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.25)", color: "#c9a84c" }}>
-                  {shareState === "copied" ? (
-                    <><span>✓</span><span>コピーしました</span></>
-                  ) : (
-                    <><span>↗</span><span>結果をシェアする</span></>
-                  )}
-                </button>
+                <div className="flex gap-3">
+                  <button onClick={handlePostToX}
+                    className="flex-1 py-3 rounded-xl text-sm tracking-wider transition-all hover:opacity-80 flex items-center justify-center gap-2"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.25)", color: "#c9a84c" }}>
+                    <span style={{ fontWeight: 700 }}>𝕏</span><span>ポストする</span>
+                  </button>
+                  <button onClick={handleShare}
+                    className="flex-1 py-3 rounded-xl text-sm tracking-wider transition-all hover:opacity-80 flex items-center justify-center gap-2"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.25)", color: "#c9a84c" }}>
+                    {shareState === "copied" ? (
+                      <><span>✓</span><span>コピーしました</span></>
+                    ) : (
+                      <><span>↗</span><span>結果をシェアする</span></>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
 
