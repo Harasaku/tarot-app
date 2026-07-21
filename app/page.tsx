@@ -87,6 +87,16 @@ export default function HomePage() {
           占いを始める
         </Link>
 
+        <p className="mt-6">
+          <Link
+            href="/cards"
+            className="text-sm tracking-widest transition-opacity hover:opacity-70"
+            style={{ color: "#f9c8d8", opacity: 0.85, textDecoration: "underline" }}
+          >
+            ✦ カードの意味を調べる（大アルカナ22枚）
+          </Link>
+        </p>
+
         <p
           className="mt-8 text-sm tracking-wider"
           style={{ color: "#c9a84c", opacity: 0.5 }}
